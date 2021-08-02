@@ -20,7 +20,7 @@ library(shinythemes)
 library(shinyjs)
 
 ### get the data from the excel file  ##################### "./Integrated_Academic_Program_Report_modified.xlsx"
-# file <-  "/srv/shiny-server/123filename/data/Integrated_Academic_Program_Report_modified.xlsx" 
+# file <-  "/srv/shiny-server/j907n34ycs3fw3/data/Integrated_Academic_Program_Report_modified.xlsx" 
 file <- choose.files()
   
 num_sheets <- length(getSheetNames(file)) # get number of excelsheets in the workbook
