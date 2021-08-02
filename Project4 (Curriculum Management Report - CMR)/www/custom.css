@@ -1,0 +1,60 @@
+
+.head_title { 
+        font-size: 30px;
+        line-height: 50px;
+        text-align: left;
+        font-family: "Georgia", Times, "Times New Roman", serif;
+        padding: 0 15px;
+        overflow: hidden;
+        color: white;
+      }
+      
+.titlePanel {
+  color: black;
+}
+
+.box {
+  border: 2px solid #255570;
+}
+
+#coursePlotTitle , #programPlotTitle, #prereqTitle{
+  font-size: 30px;
+  line-height: 50px;
+  text-align: center;
+  color: #255570;
+  font-family: "Georgia", Times, "Times New Roman", serif;
+  font-weight: bold;
+}
+
+#programTilePlotTitle, #prereqTitle {
+  font-size: 30px;
+  line-height: 50px;
+  text-align: center;
+  color: #255570;
+  font-family: "Georgia", Times, "Times New Roman", serif;
+  font-weight: bold;
+}
+
+
+.tabs-above > .nav > li[class=active] > a {
+           background-color: #000;
+           color: #FFF;
+        }
+        
+/*.coursePlot {
+  font-size: 30px;
+  line-height: 50px;
+  text-align: center;
+  color: red;
+  font-family: "Georgia", Times, "Times New Roman", serif;
+  font-weight: bold;
+}*/
+#test {
+  color: black;
+}
+
+#ul.sidebar-menu {
+    color: blue  ;
+    background: #1e282c;
+    border-left-color: #3c8dbc;
+}
