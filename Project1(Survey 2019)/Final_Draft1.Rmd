@@ -1,0 +1,751 @@
+---
+title: "School of Information Technology - Orientation Survey 2019-20 [STATISTICS]"
+author: "Chethana W"
+date: "26/11/2019"
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: no
+  pdf_document:
+    toc: yes
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## **Survey Analysis**
+
+## About
+
+This page contains graphical interpretations of the **2019-20 Orientation survey** results. Online survey can be found in this <a href="http://esg.apps01.yorku.ca/machform/view.php?id=158862"> link </a>.
+
+```{r ,include=FALSE}
+library(tidyverse)
+library(readr)
+library(openxlsx)
+library(stringi)
+library(ggplot2)
+library(scales)
+library(dplyr)
+library(sqldf)
+```
+
+```{r files,include=FALSE}
+
+#read the file with paper submission
+#rf: cleaned data extracted from the excel file
+#########################################################CHANGE WHEN REQUIRED###########
+rf <- read.xlsx("./mydata1.xlsx") 
+#########################################################
+
+```
+```{r ,include=FALSE}
+#filter the first and columns with answers
+clean <- rf %>% select(Exam, starts_with("Exam"), starts_with("Ticked"))
+
+#combining the scattered data and arranging accordingly
+#select columns 1 to 7 and and remove all even rows
+part1 <- clean %>% select(1:7)
+ls <- part1 %>% filter(row_number() %% 2 != 0)
+
+#select columns 8 to 12 and and remove all odd rows
+part2 <- clean %>% select(8:10)
+rs <- part2 %>% filter(row_number() %% 2 != 1)
+
+#combine the left and right tables
+draft1 <- bind_cols(ls, rs)
+
+#count paper submission
+paper_sub_count <- nrow(draft1)
+
+#change column names
+colnames(draft1) <- c("Student", "Q1", "Q2","Q3","Q4","Q5","Q6","Q7","Q8","Q9")
+
+```
+```{r ,include=FALSE}
+
+##read the file with online submission
+#draft2: cleaned data extracted from the excel file
+#########################################################CHANGE WHEN REQUIRED###########
+draft2 <- read.xlsx("./Online_Survey_2019_clean.xlsx")  
+#########################################################
+
+#count online submission
+online_sub_count <- nrow(draft2)
+
+#combine paper and online results
+draft1 <- rbind(draft1, draft2)
+
+#count total submission
+total_sub_count <- nrow(draft1)
+
+#read the file with date and time data
+# dt: first hand data extracted from the excel file
+#######################################################CHANGE WHEN REQUIRED###########
+dt <- read.xlsx("./Date_and_time.xlsx")  
+##########################################
+```
+Current Data size: `r total_sub_count` Students [`r paper_sub_count` Students (Paper submissions) & `r online_sub_count` Students (Online submission)]
+
+
+## Summary of each question
+
+
+## Q1: Question 1 <br />
+
+You are a <br />
+<span style='font-size:20px;'>&#9633;</span> Domestic <br /> 
+<span style='font-size:20px;'>&#9633;</span> International 
+
+```{r q1 , include=TRUE, echo=FALSE}
+#######################plot for Q1
+
+#Change the variables in column-> "Q1"
+draft1$`Q1` <- str_replace(draft1$`Q1`, 'A', 'Domestic') 
+draft1$`Q1` <- str_replace(draft1$`Q1`, 'B', 'International') 
+
+g1_d <- draft1 %>%
+  group_by(Q1) %>%
+  summarise(Count = n()) %>%
+  mutate( Q1 = factor(Q1),
+    Ratio = Count / sum(Count),
+         label = percent(Ratio ))%>%drop_na()
+
+g1 <-ggplot(g1_d, aes(x=Q1,y=Ratio,label=label,fill=Q1)) +
+  geom_bar(stat='identity', fill="#92BAD3") +
+  geom_text(vjust=0)
+
+g1
+
+```
+
+## Q2: Question 2 <br />
+
+Which ITEC program are you pursuing?<br />
+A <span style='font-size:20px;'>&#9633;</span> BA-ITEC <br />
+B <span style='font-size:20px;'>&#9633;</span> BCom-ITEC <br />
+C <span style='font-size:20px;'>&#9633;</span> Honours Major or Double Major <br />
+D <span style='font-size:20px;'>&#9633;</span> Honours Minor <br />
+E <span style='font-size:20px;'>&#9633;</span> Ordinary BA <br />
+F <span style='font-size:20px;'>&#9633;</span> Other/Undecided <br />
+G <span style='font-size:20px;'>&#9633;</span> I don't know 
+
+```{r q2, include=TRUE, echo=FALSE}
+#######################plot for Q2
+
+g2_d <- draft1 %>%
+  group_by(Q2) %>%
+  summarise(Count = n()) %>%
+  mutate( Q2 = factor(Q2),
+    Ratio = Count / sum(Count),
+         label = percent(Ratio))%>%drop_na()
+
+g2 <-ggplot(g2_d, aes(x=Q2,y=Ratio,label=label,fill=Q2)) +
+  geom_bar(stat='identity', fill="#92BAD3") +
+  geom_text(vjust=0)
+
+g2
+```
+
+## Q3: Question 3 <br />
+
+Are you currently employed?<br />
+<span style='font-size:20px;'>&#9633;</span> Yes, full-time <br />
+<span style='font-size:20px;'>&#9633;</span> Yes, part-time <br />
+<span style='font-size:20px;'>&#9633;</span> Not employed
+
+```{r q3 , include=TRUE, echo=FALSE}
+#######################plot1 for Q3
+
+#('A', 'Full-time') 
+#('B', 'Part-time') 
+#('C', 'Not employed') 
+
+g3_d <- draft1 %>%
+  group_by(Q3) %>%
+  summarise(Count = n()) %>%
+  mutate( Q3 = factor(Q3),
+    Ratio = Count / sum(Count),
+         label = percent(Ratio))%>%drop_na()
+
+g3 <-ggplot(g3_d, aes(x=Q3,y=Ratio,label=label,fill=Q3)) +
+  geom_bar(stat='identity', fill="#92BAD3") +
+  geom_text(vjust=0)+
+  scale_x_discrete(labels=c("Full-time", "Part-time", "Not employed"))
+
+g3
+```
+
+
+## Q4: Question 4 <br />
+
+Did you know of the School of Information Technology(ITEC) before coming to York?<br />
+<span style='font-size:20px;'>&#9633;</span> Yes <br />
+<span style='font-size:20px;'>&#9633;</span> No
+
+```{r q4, include=TRUE, echo=FALSE}
+#######################plot1 for Q4
+
+#('A', 'Yes') 
+#('B', 'No')
+
+g4_d <- draft1 %>%
+  group_by(Q4) %>%
+  summarise(Count = n()) %>%
+  mutate( Q4 = factor(Q4),
+    Ratio = Count / sum(Count),
+         label = percent(Ratio )) 
+
+g4 <-ggplot(g4_d, aes(x=Q4,y=Ratio,label=label,fill=Q4)) +
+  geom_bar(stat='identity', fill="#92BAD3") +
+  geom_text(vjust=0)+
+  scale_x_discrete(labels=c("Yes","No","Not sure"))
+
+g4
+```
+
+## Q5: Question 5 <br />
+
+If yes, where did you first learn about ITEC from(select all the apply)?<br />
+A <span style='font-size:20px;'>&#9633;</span> Web <br />
+B <span style='font-size:20px;'>&#9633;</span> Friends/parents/relatives - word of mouth <br />
+C <span style='font-size:20px;'>&#9633;</span> Recruitment agency <br />
+D <span style='font-size:20px;'>&#9633;</span> High-school <br />
+E <span style='font-size:20px;'>&#9633;</span> University fair, York open-house or similar event <br />
+F <span style='font-size:20px;'>&#9633;</span> Other
+ 
+```{r q5, include=TRUE, echo=FALSE}
+#######################plot1 for Q5
+
+tmp<-draft1
+
+tmp[is.na(tmp)] <- 0
+q5<-c("A", "B", "C", "D", "E","F")
+c5<-0
+
+for (i in 1:length(q5)) {
+     c5[i] <- (sum(str_count(tmp$Q5, q5[i])))
+}
+g5_d <- data.frame(Q5= q5, count = c5)
+
+for ( row in 1:nrow(g5_d)){
+    g5_d$Ratio <- ( g5_d$count / sum( g5_d$count))
+    g5_d$label <- percent(g5_d$Ratio %>% round(3))
+}
+
+g5 <-ggplot(g5_d, aes(x=Q5,y=Ratio,label=label,fill=Q5)) +
+  geom_bar(stat='identity', fill="#92BAD3") +
+  geom_text(vjust=0)
+
+g5
+
+```
+
+## Q6: Question 6 <br />
+
+What choice was ITEC in your application?<br />
+<span style='font-size:20px;'>&#9633;</span> My 1st choice <br />
+<span style='font-size:20px;'>&#9633;</span> My 2nd choice <br />
+<span style='font-size:20px;'>&#9633;</span> My 3rd choice <br />
+<span style='font-size:20px;'>&#9633;</span> My 4th choice <br />
+<span style='font-size:20px;'>&#9633;</span> None-ITEC was suggested for me after I came to York Univeristy
+ 
+```{r q6, include=TRUE, echo=FALSE}
+
+#('A', '1st choice') 
+#('B', '2nd choice')
+#('C', '3rd choice') 
+#('D', '4th choice')
+#('E', 'Other')
+
+g6_d <- draft1 %>%
+  group_by(Q6) %>%
+  summarise(Count = n()) %>%
+  mutate( Q6 = factor(Q6),
+    Ratio = Count / sum(Count),
+         label = percent(Ratio)) %>%drop_na()
+
+
+g6 <-ggplot(g6_d, aes(x=Q6,y=Ratio,label=label,fill=Q6)) +
+  geom_bar(stat='identity', fill="#92BAD3") +
+  geom_text(vjust=0)+
+  scale_x_discrete(labels=c("1st choice", "2nd choice", "3rd choice", "4th choice", "Other"))
+
+g6
+```
+
+## Q7: Question 7 <br />
+
+Did you also apply to Computer Science at York Uinversity?<br />
+A <span style='font-size:20px;'>&#9633;</span> Yes and I am still interested to go there <br />
+B <span style='font-size:20px;'>&#9633;</span> Yes, but I am not interested to go there anymore <br />
+C <span style='font-size:20px;'>&#9633;</span> No, but I could consider switching <br />
+D <span style='font-size:20px;'>&#9633;</span> No and I am not interested in switching
+ 
+```{r q7, include=TRUE, echo=FALSE}
+#######################plot1 for Q7
+q7<-c("A", "B", "C", "D")
+c7<-0
+
+for (i in 1:length(q7)) {
+     c7[i] <- (sum(str_count(tmp$Q7, q7[i])))
+}
+g7_d <- data.frame(Q7= q7, count = c7)
+
+for ( row in 1:nrow(g7_d)){
+    g7_d$Ratio <- ( g7_d$count / sum( g7_d$count))
+    g7_d$label <- percent(g7_d$Ratio)
+}
+
+g7 <-ggplot(g7_d, aes(x=Q7,y=Ratio,label=label,fill=Q7)) +
+  geom_bar(stat='identity', fill="#92BAD3") +
+  geom_text(vjust=0)
+
+g7
+```
+
+## Q8: Question 8 <br />
+
+Which of the two are you most interested in?<br />
+<span style='font-size:20px;'>&#9633;</span> Mostly computers and software <br />
+<span style='font-size:20px;'>&#9633;</span> Mostly businesses and organizations <br />
+<span style='font-size:20px;'>&#9633;</span> Both equally
+ 
+```{r q8, include=TRUE, echo=FALSE}
+
+#('A', 'Computers and software') 
+#('B', 'Businesses and organizations')
+#('C', 'Both equally') 
+
+
+#######################plot1 for Q8
+q8<-c("A", "B", "C")
+c8<-0
+
+for (i in 1:length(q8)) {
+     c8[i] <- (sum(str_count(tmp$Q8, q8[i])))
+}
+g8_d <- data.frame(Q8= q8 ,count = c8)
+
+for ( row in 1:nrow(g8_d)){
+    g8_d$Ratio <- ( g8_d$count / sum( g8_d$count))
+    g8_d$label <- percent(g8_d$Ratio %>% round(3))
+}
+
+g8 <-ggplot(g8_d, aes(x=Q8,y=Ratio,label=label,fill=Q8)) +
+  geom_bar(stat='identity', fill="#92BAD3") +
+  geom_text(vjust=0)+
+  scale_x_discrete(labels = c("Computers and software", "Businesses and organizations", "Both equally"))
+
+g8
+```
+
+## Q9: Question 9 <br />
+
+Which of the following topics of study fascinate you the most? Pick at most three (3)<br />
+A <span style='font-size:20px;'>&#9633;</span> 
+Software Development <br />
+B <span style='font-size:20px;'>&#9633;</span> Computer Hardware and Devices <br />
+C <span style='font-size:20px;'>&#9633;</span> Complex Business Systems <br />
+D <span style='font-size:20px;'>&#9633;</span> Data Analysis and Databases <br />
+E <span style='font-size:20px;'>&#9633;</span> Artificial Intelligence <br />
+F <span style='font-size:20px;'>&#9633;</span> Information Technology Management <br />
+G <span style='font-size:20px;'>&#9633;</span> Graphics and Video Game Design <br />
+H <span style='font-size:20px;'>&#9633;</span> Hacking and Security <br />
+I <span style='font-size:20px;'>&#9633;</span> Networks and their Design <br />
+J <span style='font-size:20px;'>&#9633;</span> Other
+
+```{r q9, include=TRUE, echo=FALSE}
+#######################plot1 for Q9
+q9<-c("A", "B", "C", "D","E","F", "G","H", "I", "J")
+c9<-0
+
+for (i in 1:length(q9)) {
+     c9[i] <- (sum(str_count(tmp$Q9, q9[i])))
+}
+g9_d <- data.frame(Q9= q9, count = c9)
+
+for ( row in 1:nrow(g9_d)){
+    g9_d$Ratio <- ( g9_d$count / sum( g9_d$count))
+    g9_d$label <- percent(g9_d$Ratio %>% round(3))
+}
+
+g9 <-ggplot(g9_d, aes(x=Q9,y=Ratio,label=label,fill=Q9)) +
+  geom_bar(stat='identity', fill="#92BAD3") +
+  geom_text(vjust=0)
+
+g9
+
+```
+ 
+ *Students with interest in computer science*
+ 
+```{r q9_1, include=TRUE, echo=FALSE}
+
+t9_1 <- sqldf('Select Student, Q7, Q9 from draft1 where Q7 like "%A%" OR Q7 like "%C%" ')
+t9_1[is.na(t9_1)] <- 0
+
+q9_1<-c("A", "B", "C", "D","E","F", "G","H", "I", "J")
+c9_1<-0
+
+for (i in 1:length(q9_1)) {
+     c9_1[i] <- (sum(str_count(t9_1$Q9, q9_1[i])))
+}
+g9_d1 <- data.frame(Q9= q9_1, count = c9_1)
+
+for ( row in 1:nrow(g9_d1)){
+    g9_d1$Ratio <- ( g9_d1$count / sum( g9_d1$count))
+    g9_d1$label <- percent(g9_d1$Ratio %>% round(3))
+}
+
+g9_1 <-ggplot(g9_d1, aes(x=Q9,y=Ratio,label=label,fill=Q9)) +
+  geom_bar(stat='identity', fill="#F9736B") +
+  geom_text(vjust=0)
+
+g9_1
+```
+ 
+ *Students with interest in ITEC*
+ 
+```{r q9_2, include=TRUE, echo=FALSE}
+t9_2 <- sqldf('Select Student, Q7, Q9 from draft1 where Q7 like "%B%" OR Q7 like "%D%" ')
+t9_2[is.na(t9_2)] <- 0
+
+q9_2<-c("A", "B", "C", "D","E","F", "G","H", "I", "J")
+c9_2<-0
+
+for (i in 1:length(q9_2)) {
+     c9_2[i] <- (sum(str_count(t9_2$Q9, q9_2[i])))
+}
+g9_d2 <- data.frame(Q9= q9_2, count = c9_2)
+
+for ( row in 1:nrow(g9_d2)){
+    g9_d2$Ratio <- ( g9_d2$count / sum( g9_d2$count))
+    g9_d2$label <- percent(g9_d2$Ratio %>% round(3))
+}
+
+g9_2 <-ggplot(g9_d2, aes(x=Q9,y=Ratio,label=label,fill=Q9)) +
+  geom_bar(stat='identity', fill="#F9736B") +
+  geom_text(vjust=0)
+
+g9_2
+```
+ 
+
+*Students who are more interested in computers and software*
+
+```{r q9_3, include=TRUE, echo=FALSE}
+t9_3 <- sqldf('Select Student, Q8, Q9 from draft1 where Q8 like "%A%"')
+t9_3[is.na(t9_3)] <- 0
+
+q9_3<-c("A", "B", "C", "D","E","F", "G","H", "I", "J")
+c9_3<-0
+
+for (i in 1:length(q9_3)) {
+     c9_3[i] <- (sum(str_count(t9_3$Q9, q9_3[i])))
+}
+g9_d3 <- data.frame(Q9= q9_3, count = c9_3)
+
+for ( row in 1:nrow(g9_d3)){
+    g9_d3$Ratio <- ( g9_d3$count / sum( g9_d3$count))
+    g9_d3$label <- percent(g9_d3$Ratio %>% round(3))
+}
+
+g9_3 <-ggplot(g9_d3, aes(x=Q9,y=Ratio,label=label,fill=Q9)) +
+  geom_bar(stat='identity', fill="#06BCC3") +
+  geom_text(vjust=0)
+
+g9_3
+```
+
+
+*Students who are more interested in businesses and organizations*
+
+```{r q9_4, include=TRUE, echo=FALSE}
+t9_4 <- sqldf('Select Student, Q8, Q9 from draft1 where Q8 like "%B%"')
+t9_4[is.na(t9_4)] <- 0
+
+q9_4<-c("A", "B", "C", "D","E","F", "G","H", "I", "J")
+c9_4<-0
+
+for (i in 1:length(q9_4)) {
+     c9_4[i] <- (sum(str_count(t9_4$Q9, q9_4[i])))
+}
+g9_d4 <- data.frame(Q9= q9_4, count = c9_4)
+
+for ( row in 1:nrow(g9_d3)){
+    g9_d4$Ratio <- ( g9_d4$count / sum( g9_d4$count))
+    g9_d4$label <- percent(g9_d4$Ratio %>% round(3))
+}
+
+g9_4 <-ggplot(g9_d4, aes(x=Q9,y=Ratio,label=label,fill=Q9)) +
+  geom_bar(stat='identity', fill="#06BCC3") +
+  geom_text(vjust=0)
+
+g9_4
+```
+
+
+*Students who are more interested in all (computers, software, businesses, and organizations)*
+
+```{r q9_5, include=TRUE, echo=FALSE}
+t9_5 <- sqldf('Select Student, Q8, Q9 from draft1 where Q8 like "%C%"')
+t9_5[is.na(t9_5)] <- 0
+
+q9_5<-c("A", "B", "C", "D","E","F", "G","H", "I", "J")
+c9_5<-0
+
+for (i in 1:length(q9_5)) {
+     c9_5[i] <- (sum(str_count(t9_5$Q9, q9_5[i])))
+}
+g9_d5 <- data.frame(Q9= q9_5, count = c9_5)
+
+for ( row in 1:nrow(g9_d5)){
+    g9_d5$Ratio <- ( g9_d5$count / sum( g9_d5$count))
+    g9_d5$label <- percent(g9_d5$Ratio %>% round(3))
+}
+
+g9_5 <-ggplot(g9_d5, aes(x=Q9,y=Ratio,label=label,fill=Q9)) +
+  geom_bar(stat='identity', fill="#06BCC3") +
+  geom_text(vjust=0)
+
+g9_5
+```
+
+
+
+```{r clean_data_for_q10&q11, include=TRUE, echo=FALSE,  warning = FALSE}
+#replace all missing values(i.e N/A) with zero
+dt[is.na(dt)] <- 0
+
+##Calculating the average popularity
+
+dtnew <- dt
+dtnew$Student <- NULL
+
+dtnew<-arrange(dtnew, desc(Monday)) #sort using first col
+
+rm(c) #removing the global variable c 
+
+levels=unique(do.call(c,dtnew))
+level_sub1 <- levels[c(1:6)]
+
+out2 <- sapply(level_sub1,function(y) (colSums(dtnew==y)/nrow(dt))*100) #count occurrences of x in each row
+colnames(out2) <- level_sub1
+out2 <- t(out2)
+out2.df <- as.data.frame(out2)
+
+out2.df <- data.frame(scale = c(5, 4, 3, 2, 1,0), out2.df)
+
+```
+
+## Q10: Question 10 <br />
+
+Which are your preferred days to have classes? <br />
+<span style='font-size:20px;'>&#9633;</span> Monday <br />
+<span style='font-size:20px;'>&#9633;</span> Tuesday <br />
+<span style='font-size:20px;'>&#9633;</span> Wednesday <br />
+<span style='font-size:20px;'>&#9633;</span> Thursday <br />
+<span style='font-size:20px;'>&#9633;</span> Friday <br />
+<span style='font-size:20px;'>&#9633;</span> Saturday <br />
+<span style='font-size:20px;'>&#9633;</span> Sunday
+
+***MOST POPULAR DAYS IN A WEEK FOR CLASSES***
+
+```{r q10_1 , include=TRUE, echo=FALSE}
+############Bar graph for "MOST POPULAR DAYS IN A WEEK FOR CLASSES"
+
+days <- c(colnames(dt)[2:8])
+
+count <-  c(sum(dt[2]), sum(dt[3]),sum(dt[4]),sum(dt[5]),sum(dt[6]),sum(dt[7]), sum(dt[8]))
+
+average1 <- signif((count/nrow(dt)),3)
+
+week_summary <- data.frame(days, average1)
+
+week_summary$days <- factor(week_summary$days,levels = c("Monday", "Tuesday", "Wednesday", "Thursday" ,"Friday", "Saturday", "Sunday"))
+
+out_g1<-ggplot(data=week_summary, aes(x=days, y=average1, label = average1)) +
+    geom_bar(fill="#7C91EF", stat="identity") +
+    guides(fill=FALSE) +
+    xlab("Days in a week") + ylab("Average Popularity") +
+ggtitle("                               MOST POPULAR DAYS IN A WEEK FOR CLASSES")+
+  geom_text(vjust = -1, nudge_y = -0.5, color="black", size=5)
+
+out_g1
+```
+
+***POPULAR AVERAGE DAYS IN A WEEK FOR CLASSES***
+
+```{r q10_2, include=TRUE, echo=FALSE , warning = FALSE}
+
+###sum_high ## "Preferred or Highly Preferred"
+days <- c("Monday", "Tuesday", "Wednesday", "Thursday" ,"Friday", "Saturday", "Sunday")
+
+ws1 <- out2.df[1:2, 1:8]
+ws1$`scale` <- str_replace(ws1$`scale`, '5', '5-Strongly Preferred') 
+ws1$`scale` <- str_replace(ws1$`scale`, '4', '4-Preferred') 
+
+sum_high <- c(sum(ws1[2]), sum(ws1[3]),sum(ws1[4]),sum(ws1[5]),sum(ws1[6]),sum(ws1[7]), sum(ws1[8]))
+
+ws1.g <- gather(ws1, type, value, -scale)
+
+ws1.g$type <- factor(ws1.g$type,levels = c("Monday", "Tuesday", "Wednesday", "Thursday" ,"Friday", "Saturday", "Sunday"))
+
+g_ws1 <- ggplot(ws1.g, aes(type, value)) + 
+  geom_bar(aes(fill = scale), stat = "identity", position = "dodge") +
+    xlab("Days in a week") + ylab("Average respondents") +
+ggtitle("Percentage of respondents that responded preferred or above")
+
+##sum_low  ## "Strongly Not Preferred"
+ws2 <- out2.df[5:6, 1:8]
+ws2$`scale` <- str_replace(ws2$`scale`, '1', '1-Strongly Not Preferred') 
+ws2$`scale` <- str_replace(ws2$`scale`, '0', '0-No Response') 
+
+sum_low <- c(sum(ws2[2]), sum(ws2[3]),sum(ws2[4]),sum(ws2[5]),sum(ws2[6]),sum(ws2[7]), sum(ws2[8]))
+ws2.g <- gather(ws2, type, value, -scale)
+
+ws2.g$type <- factor(ws1.g$type,levels = c("Monday", "Tuesday", "Wednesday", "Thursday" ,"Friday", "Saturday", "Sunday"))
+
+g_ws2 <- ggplot(ws2.g, aes(type, value)) + 
+  geom_bar(aes(fill = scale), stat = "identity", position = "dodge") +
+    xlab("Days in a week") + ylab("Average respondents") +
+ggtitle("Percentage of respondents that responded Not Preferred or NON")
+
+##combined "Preferred or Highly Preferred", "Strongly Not Preferred"
+ws <- data.frame(days, sum_high, sum_low)
+ws <- t(ws)
+
+colnames(ws) = ws[1,] 
+ws <- ws[-1, ]
+
+ws <- data.frame(scale = c( "Preferred or Highly Preferred", "Strongly Not Preferred"), ws)
+
+ws.g <- gather(ws, type, value, -scale)
+
+ws.g$type <- factor(ws.g$type,levels = c("Monday", "Tuesday", "Wednesday", "Thursday" ,"Friday", "Saturday", "Sunday"))
+
+g_ws <- ggplot(ws.g, aes(type, value)) + 
+  geom_bar(aes(fill = scale), stat = "identity", position = "dodge") +
+    xlab("Days in a week") + ylab("Average respondents") +
+ggtitle("                 Percentage of respondents")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3))+
+  scale_fill_manual(values = c("#06BCC3", "#F9736B"))
+
+g_ws
+```
+
+## Q11: Question 11 <br />
+
+Which times are your favorite ones to have classes? <br />
+<span style='font-size:20px;'>&#9633;</span> Morning(8:30am-11:30am) <br />
+<span style='font-size:20px;'>&#9633;</span> Early Afternoon(11:30am-2:30pm) <br />
+<span style='font-size:20px;'>&#9633;</span> Late Afternoon(2:30pm-5:30pm) <br />
+<span style='font-size:20px;'>&#9633;</span> Early Evening(4:00pm-7:00pm) <br />
+<span style='font-size:20px;'>&#9633;</span> Late Evening(7:00pm-10:00pm)
+
+***MOST POPULAR TIMES IN A DAY TO HAVE CLASS***
+
+```{r q11_1, include=TRUE, echo=FALSE}
+times <- c(colnames(dt)[9:13]) 
+
+count2 <- c(sum(dt[9]), sum(dt[10]),sum(dt[11]),sum(dt[12]),sum(dt[13]))
+
+#day_summary <- data.frame(times, count2)
+average2 <- signif((count2/nrow(dt)), 3)
+
+day_summary <- data.frame(times,average2 )
+
+day_summary$times <- factor(day_summary$times,levels = c("Morning>(8:30am-11:30am)", "Early_afternoon>(11:30am-2:30pm)", "Late_afternoon>(2:30pm-5:30pm)", "Early_evening>(4:00pm-7:00pm)" ,"Evening>(7:00pm-10:00pm)"))
+
+levels(day_summary$times) <- gsub(">", "\n", levels(day_summary$times))
+
+out_g2 <-ggplot(data=day_summary, aes(x=times, y=average2 , label = average2 )) +
+    geom_bar(fill="#7C91EF", stat="identity") +
+    guides(fill=FALSE) +
+    xlab("Time slots") + ylab("Average Popularity") +
+ggtitle("                           MOST POPULAR TIMES IN A DAY TO HAVE CLASSES")+
+  geom_text(vjust = -1, nudge_y = -1, color="black", size=5)
+
+out_g2
+```
+
+***POPULAR AVERAGE TIMES IN A DAY TO HAVE CLASS***
+
+```{r q11_2 , include=TRUE, echo=FALSE, warning = FALSE}
+
+##sum_high2 ##  "Preferred or Highly Preferred"
+
+time <- c("Morning>(8:30am-11:30am)", "Early_afternoon>(11:30am-2:30pm)", "Late_afternoon>(2:30pm-5:30pm)", "Early_evening>(4:00pm-7:00pm)" ,"Evening>(7:00pm-10:00pm)")
+
+ds1 <- out2.df[1:2, -c(2:8)]
+ds1$`scale` <- str_replace(ds1$`scale`, '5', '5-Strongly Preferred') 
+ds1$`scale` <- str_replace(ds1$`scale`, '4', '4-Preferred') 
+
+names(ds1) <- c("scale","Morning>(8:30am-11:30am)", "Early_afternoon>(11:30am-2:30pm)", "Late_afternoon>(2:30pm-5:30pm)", "Early_evening>(4:00pm-7:00pm)" ,"Evening>(7:00pm-10:00pm)")
+
+sum_high2 <- c(sum(ds1[2]), sum(ds1[3]),sum(ds1[4]),sum(ds1[5]),sum(ds1[6]))
+
+ds1.g <- gather(ds1, type, value, -scale)
+
+ds1.g$type <- factor(ds1.g$type,levels = c("Morning>(8:30am-11:30am)", "Early_afternoon>(11:30am-2:30pm)", "Late_afternoon>(2:30pm-5:30pm)", "Early_evening>(4:00pm-7:00pm)" ,"Evening>(7:00pm-10:00pm)"))
+levels(ds1.g$type) <- gsub(">", "\n", levels(ds1.g$type))
+
+g_ds1 <- ggplot(ds1.g, aes(type, value)) + 
+  geom_bar(aes(fill = scale), stat = "identity", position = "dodge") +
+    xlab("Time slots") + ylab("Average respondents") +
+ggtitle("Percentage of respondents that responded preferred or above")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3))
+
+##sum_low2  ##  "Strongly Not Preferred"
+
+ds2 <- out2.df[5:6, -c(2:8)]
+ds2$`scale` <- str_replace(ds2$`scale`, '1', '1-Strongly Not Preferred') 
+ds2$`scale` <- str_replace(ds2$`scale`, '0', '0-No Response') 
+
+names(ds2) <- c("scale","Morning>(8:30am-11:30am)", "Early_afternoon>(11:30am-2:30pm)", "Late_afternoon>(2:30pm-5:30pm)", "Early_evening>(4:00pm-7:00pm)" ,"Evening>(7:00pm-10:00pm)")
+
+sum_low2 <- c(sum(ds2[2]), sum(ds2[3]),sum(ds2[4]),sum(ds2[5]),sum(ds2[6]))
+
+ds2.g <- gather(ds2, type, value, -scale)
+
+ds2.g$type <- factor(ds2.g$type,levels = c("Morning>(8:30am-11:30am)", "Early_afternoon>(11:30am-2:30pm)", "Late_afternoon>(2:30pm-5:30pm)", "Early_evening>(4:00pm-7:00pm)" ,"Evening>(7:00pm-10:00pm)"))
+levels(ds2.g$type) <- gsub(">", "\n", levels(ds2.g$type))
+
+g_ds2 <- ggplot(ds2.g, aes(type, value)) + 
+  geom_bar(aes(fill = scale), stat = "identity", position = "dodge") +
+    xlab("Time slots") + ylab("Average respondents") +
+ggtitle("Percentage of respondents that responded Not Preferred or NON")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3))
+
+##combined "Preferred or Highly Preferred", "Strongly Not Preferred"
+ds <- data.frame(time, sum_high2, sum_low2)
+ds <- t(ds)
+
+colnames(ds) = ds[1,] 
+ds <- ds[-1, ]
+
+ds <- data.frame(scale = c( "Preferred or Highly Preferred", "Strongly Not Preferred"), ds)
+
+names(ds) <- c("scale","Morning>(8:30am-11:30am)", "Early_afternoon>(11:30am-2:30pm)", "Late_afternoon>(2:30pm-5:30pm)", "Early_evening>(4:00pm-7:00pm)" ,"Evening>(7:00pm-10:00pm)")
+
+ds.g <- gather(ds, type, value, -scale)
+
+ds.g$type <- factor(ds.g$type,levels = c("Morning>(8:30am-11:30am)", "Early_afternoon>(11:30am-2:30pm)", "Late_afternoon>(2:30pm-5:30pm)", "Early_evening>(4:00pm-7:00pm)" ,"Evening>(7:00pm-10:00pm)"))
+levels(ds.g$type) <- gsub(">", "\n", levels(ds.g$type))
+
+g_ds <- ggplot(ds.g, aes(type, value)) + 
+  geom_bar(aes(fill = scale), stat = "identity", position = "dodge") +
+    xlab("Time slots") + ylab("Average respondents") +
+ggtitle("           Percentage of respondents")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3))+
+  scale_fill_manual(values = c("#06BCC3", "#F9736B"))
+
+g_ds
+
+```
+
+
