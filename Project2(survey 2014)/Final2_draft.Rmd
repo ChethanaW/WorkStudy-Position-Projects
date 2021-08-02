@@ -1,0 +1,802 @@
+---
+title: "York University - Cyclical Program Review - 2014"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE,  fig.align='center')
+
+```
+# Undergraduate Program in Inforamtion Technology
+
+**Student Questionnaire Results **
+
+*Recreation of the report using Rmarkdown*
+
+*By: Chethana Wickramasinghe (1/31/2020)*
+
+
+```{r ,include=FALSE}
+
+library(tidyverse)
+library(readr)
+library(openxlsx)
+library(stringi)
+library(ggplot2)
+library(scales)
+library(dplyr)
+library(knitr)
+library(kableExtra)
+library(sqldf)
+
+```
+
+```{r files,include=FALSE}
+
+#read the file with paper submission
+#rf: cleaned data extracted from the excel file
+#########################################################CHANGE WHEN REQUIRED###########
+rf2 <- read.xlsx("./2014_Cyclical_Program_Review_Data.xlsx") 
+
+#remove @sign from the headings
+names(rf2) <- gsub("@", "_", names(rf2), fixed = TRUE)
+
+#filter Information technology students
+IT_rf2 <-  rf2 %>% filter (program_name == 'Information Technology')
+#########################################################
+```
+
+```{r functions,include=FALSE, echo=FALSE, warning=FALSE}
+#functions
+extract_data <- function(sub_df1,array,number){
+  col_names <- colnames(sub_df1)
+
+  col_index = 0
+  
+  for (i in col_names) {
+  
+  c9_2  <- sub_df1 %>%
+    group_by(sub_df1[[i]]) %>%
+    summarise(Count = n())
+  
+  col_index =col_index +1
+  colnames(c9_2)[1] <- col_names[col_index]
+  colnames(c9_2)[2] <- array[col_index ]
+  
+  nc9_2 <- c9_2
+  colnames(nc9_2)[1] <- "number"
+  statement = paste ("SELECT *
+                FROM number
+                LEFT JOIN nc9_2 USING(number)")
+  
+  finaldata <- sqldf(statement)
+  number <- finaldata
+  }
+  
+  clean<- finaldata %>% select(number, starts_with("Count"))
+  clean<- t(clean)
+  clean<- as.data.frame(clean)
+  clean<- clean[-1,]
+
+  
+  return(clean)
+}
+
+get_summary <- function(sub_df1){
+  na <- sum(length(which(is.na(sub_df1[[1]]))))
+  if (na > 0) {
+    Frequency_extract <- sub_df1 %>%
+    group_by(sub_df1[[1]]) %>%
+    summarise(Frequency = n()) %>%
+    slice(-n())
+  }else{
+    Frequency_extract <- sub_df1 %>%
+    group_by(sub_df1[[1]]) %>%
+    summarise(Frequency = n())
+  }
+  
+  Percent_extract <- sub_df1 %>%
+    group_by(sub_df1[[1]]) %>%
+    summarise(Percent = n()/nrow(sub_df1) *100)
+  
+  results<-left_join(Frequency_extract, Percent_extract)
+  
+  results$Valid_Percent= 100*(results$Frequency)/(sum(results$Frequency))
+  
+  results$cumulative_Percent= 100*cumsum(results$Frequency)/sum(results$Frequency)
+
+  return(results)
+  
+}
+```
+
+```{r p1 , include=TRUE, echo=FALSE, warning=FALSE}
+g1_d <- rf2 %>%
+  group_by(program_name) %>%
+  summarise(Count = n()) %>%
+  mutate( program_name = factor(program_name),
+    Ratio = Count / sum(Count),
+         label = percent(Ratio ))%>%drop_na()
+
+g1 <-ggplot(g1_d, aes(x=program_name,y=Ratio,label=label,fill=program_name)) +
+  geom_bar(stat='identity', fill="#92BAD3") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3), plot.title = element_text(hjust = 0.5))+geom_text(vjust=0.1)+labs(title = "Response Rates By Program", x = "Programs", y ="Response Rate")
+
+g1
+
+```
+
+# Overall program rating
+
+```{r c7 , include=TRUE, echo=FALSE, warning=FALSE}
+sub_df1 <- IT_rf2 %>% select(7)
+results <- get_summary(sub_df1)
+
+#rename rownames
+results$`sub_df1[[1]]` <- c("Excellent","Very good","Good","Fair","Poor","Very poor")
+colnames(results)[1] <- " "
+
+results %>%
+  kable() %>%
+  kable_styling()
+
+```
+
+
+```{r p2 , include=TRUE, echo=FALSE , warning = FALSE}
+
+fa7 <- IT_rf2 %>% filter(a7 != 7)
+
+#summarising
+g2_d <- fa7 %>%
+  group_by(a7) %>%
+  summarise(Count = n()) %>%
+  mutate( a7 = factor(a7),
+    Ratio = Count / sum(Count),
+         Percentage = round((Ratio *100 ),2))%>%drop_na()#########
+
+#creating the graph
+g2 <-ggplot(g2_d, aes(x=a7,y=Ratio,label=Percentage,fill=a7)) +
+  geom_bar(stat='identity', fill="#92BAD3") +
+  theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.3), plot.title = element_text(hjust = 0.5))+geom_text(vjust=1)+labs(title = "Overall program rating",x="Ratings",y ="Percent")+scale_x_discrete(labels=c("Excellent","Very good","Good","Fair","Poor","Very poor"))
+
+g2
+
+
+
+```
+
+# Courses achieved these goals
+
+```{r b1 , include=TRUE, echo=FALSE , warning = FALSE}
+#extracting the columns incuded only for this question
+
+sub_df1 <-  IT_rf2 %>% select(10:20) 
+array <- c("Count1a", "Count2b", "Count3c", "Count4d", "Count1e"
+           , "Count2f", "Count3g", "Count4h", "Count1i", "Count2j"
+           , "Count3k")
+number <- data.frame(number = c("1","2","3","4","5","6","7"))
+
+clean <- extract_data(sub_df1, array, number)
+#make first row the column and rename columns
+colnames(clean) <- c("All", "Most", "About half", "A few", "None", "No opinion", "Does not apply")
+
+#rename rownames
+rownames(clean) <- c("Course instructors provide high quality teaching",
+                        "Instructors are enthusiastic about their teaching",
+                        "Instructors encourage students to become independent learners",
+                        "In 3000- and 4000 - level courses, instructors integrate research into their teaching",
+                        "Instructors provide complete course outlines that clarify the course objectives and requirements",
+                        "Teaching assistants provide high quality teaching",
+                        "Teaching assistants provide interesting additional material to enhance courses",
+                        "Lab assistants/technicians make sure that equipment is ready & in working order & supplies ready for
+labs",
+                        "The balance between lectures, tutorials, labs and other methods makes for effective learning",
+                        "Course work and examinations are evaluated fairly",
+                        "Every student is treated fairly and equitably")
+
+clean  %>%
+  kable() %>%
+  kable_styling
+
+
+```
+
+# Program contributed to:
+
+```{r b2 , include=TRUE, echo=FALSE , warning = FALSE}
+#extracting the columns incuded only for this question
+
+sub_df1 <-  IT_rf2 %>% select(21:38) 
+array <- c("Count1a", "Count2b", "Count3c", "Count4d", "Count1e"
+           , "Count2f", "Count3g", "Count4h", "Count5i", "Count1j"
+           , "Count2k", "Count3l", "Count4m" , "Count5n", "Count1o"
+           , "Count2p" , "Count3q", "Count4r")
+
+number <- data.frame(number = c("1","2","3","4","5"))
+
+clean <- extract_data(sub_df1, array, number)
+
+#make first row the column and rename columns
+colnames(clean) <- c("Very Much", "Quite a bit", "Some", "Very little","Does not apply")
+
+#rename rownames
+rownames(clean) <- c("Understanding theories and concepts",
+                        "Understanding the limits of your own knowledge",
+                        "Understanding different disciplinary approaches to problem solving",
+                        "Understanding different methodological approaches",
+                        "Understanding major ethical guidelines",
+                        "Critically evaluate arguments in analyzing conflicting views and develop a standpoint",
+                        "Ability to reason with numbers",
+                        "Ability to develop and evaluate creative solutions",
+                        "Understanding professional codes of practice",
+                        "Identify and address your own learning needs",
+                        "Critically evaluate communications",
+                        "Writing effectively",
+                        "Present ideas effectively",
+                        "Exercising initiative and accepting responsibility",
+                        "Working effectively in a team",
+                        "Leadership ability",
+                        "Respect for, and support of, diversity",
+                        "Developing a concern for the well-being of others")
+
+
+clean  %>%
+  kable() %>%
+  kable_styling
+
+```
+
+# Contribution to knowledge, etc.
+
+```{r b3 , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(39:42)
+array <- c("Count1", "Count2", "Count3", "Count4")
+number <- data.frame(number = c("1","2","3","4","5","6"))
+clean <- extract_data(sub_df1, array, number)
+
+#make first row the column and rename columns
+colnames(clean) <- c("Very Much", "Quite a bit", "Some", "Very little","Cannot say", "Not applicable")
+
+#rename rownames
+rownames(clean) <- c("Required courses", "Foundation courses", "
+                        General education courses","Elective courses")
+
+clean  %>%
+  kable() %>%
+  kable_styling
+
+
+```
+
+# Program
+
+```{r c1 , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(43:45)
+array <- c("Count1", "Count2", "Count3")
+number <- data.frame(number = c("1","2","3","4","5"))
+clean <- extract_data(sub_df1, array, number)
+
+#make first row the column and rename columns
+colnames(clean) <- c("Very well", "Fairly well", "Not very well", "Not at all well","Cannot say")
+
+#rename rownames
+rownames(clean) <- c("Covered a variety of disciplinary or multi-disciplinary
+perspectives ", "Addressed equity, diversity, inclusivity", "Avoided unnecessary repetition of material in other
+courses")
+
+clean  %>%
+  kable() %>%
+  kable_styling
+
+```
+
+# Contribution to preparation for upper year courses
+
+```{r c3 , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(46:49)
+array <- c("Count1", "Count2", "Count3", "Count4")
+number <- data.frame(number = c("1","2","3","4","5","6"))
+
+clean <- extract_data(sub_df1, array, number)
+
+#make first row the column and rename columns
+colnames(clean) <- c("Very Much", "Quite a bit", "Some", "Very little","Cannot say", "Not applicable")
+
+#rename rownames
+rownames(clean) <- c("Required courses", "Foundation courses", "
+                        General education courses","Elective courses")
+
+clean  %>%
+  kable() %>%
+  kable_styling
+
+```
+
+# Difficulty enrolling
+
+```{r c4 , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(50:51)
+array <- c("Count1", "Count2")
+number <- data.frame(number = c("1","2","3","4","5"))
+clean <- extract_data(sub_df1, array, number)
+
+#make first row the column and rename columns
+colnames(clean) <- c("Always","Most of the time", "Sometimes", "Rarely","Never")
+
+#rename rownames
+rownames(clean) <- c("The course was full","The course was not offered at a time that was convenient for you" )
+
+clean  %>%
+  kable() %>%
+  kable_styling
+
+```
+
+# Courses preferred
+
+```{r c5 , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(52:54)
+array <- c("Count1", "Count2", "Count3")
+number <- data.frame(number = c("1","2","3","4","5","6"))
+clean <- extract_data(sub_df1, array, number)
+
+#make first row the column and rename columns
+colnames(clean) <- c("All", "Most", "About half", "A few", "None" , "Not sure")
+
+#rename rownames
+rownames(clean) <- c("8:30 am - 4:30 pm", "4:30 pm - 6:30 pm","7:00 pm - 10:00 pm")
+
+clean  %>%
+  kable() %>%
+  kable_styling
+
+```
+
+# Courses
+
+```{r c6 , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(55:57)
+array <- c("Count1", "Count2", "Count3")
+number <- data.frame(number = c("1","2","3","4","5","6"))
+clean <- extract_data(sub_df1, array, number)
+
+#make first row the column and rename columns
+colnames(clean) <- c("All", "Most", "About half", "A few", "None" , "Not sure")
+
+#rename rownames
+rownames(clean) <- c("Used technology to enhance
+learning experience ", "Provided hands-on learning
+opportunities","Like to take online")
+
+clean  %>%
+  kable() %>%
+  kable_styling
+
+```
+
+# Times contacted
+
+```{r c14 , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(61:65)
+array <- c("Count1", "Count2", "Count3", "Count4", "Count5")
+number <- data.frame(number = c("1","2","3","4"))
+clean <- extract_data(sub_df1, array, number)
+
+#make first row the column and rename columns
+colnames(clean) <- c("Never", "Once", "Twice", "Three or more times")
+
+#rename rownames
+rownames(clean) <- c("Professor in program", "Undergraduate Program Director ","Undergraduate program office" ,"Student Academic Services","Registrar's office")
+
+clean  %>%
+  kable() %>%
+  kable_styling
+
+```
+
+# Extent received when needed
+
+```{r d2 , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(66:69)
+array <- c("Count1", "Count2", "Count3", "Count4", "Count5")
+number <- data.frame(number = c("1","2","3","4","5"))
+clean <- extract_data(sub_df1, array, number)
+
+#make first row the column and rename columns
+colnames(clean) <- c("Very much","Quite a bit","Some", "Very little", "Does not apply")
+
+#rename rownames
+rownames(clean) <- c("Academic advising", "Information about important deadlines","Assistance understanding academic rules and
+policies" ,"Information about academic support options")
+
+clean  %>%
+  kable() %>%
+  kable_styling
+
+```
+
+# How likely to enroll in these programs: 
+
+```{r c9_c10 , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(58:59)
+array <- c("Count1", "Count2")
+number <- data.frame(number = c("1","2","3","4","5","6"))
+clean <- extract_data(sub_df1, array, number)
+
+#make first row the column and rename columns
+colnames(clean) <- c("Very likely","Somewhat likely", "Not very likely","Not at all likely", "Not sure at this time","Already enrolled")
+
+#rename rownames
+rownames(clean) <- c("Internship", "Cooperative Education")
+
+clean  %>%
+  kable() %>%
+  kable_styling
+
+```
+
+# Other 'hands-on' learning opportunities 
+
+
+```{r c11 , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(60)
+
+results <- get_summary(sub_df1)
+
+#rename rownames
+results$`sub_df1[[1]]` <- c("Very interested","Somewhat interested", "Not very interested","Not at all interested", "Not sure at this time")
+
+colnames(results)[1] <- " "
+
+results  %>%
+  kable() %>%
+  kable_styling
+
+```
+
+
+# Quality of academic advising 
+
+```{r c16 , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(97)
+results <- get_summary(sub_df1)
+
+results$`sub_df1[[1]]` <- c("Excellent","Very Good", "Good","Fair","Poor","Very Poor","Never Obtained Advice")
+
+colnames(results)[1] <- " "
+
+results  %>%
+  kable() %>%
+  kable_styling
+
+```
+
+# Quality of program office service 
+
+```{r c18 , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(98)
+results <- get_summary(sub_df1)
+
+results$`sub_df1[[1]]` <- c("Excellent","Very Good", "Good","Fair","Poor","Very Poor")
+colnames(results)[1] <- " "
+
+results  %>%
+  kable() %>%
+  kable_styling
+
+```
+
+# Quality of library resources
+
+```{r c19 , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(99)
+
+results <- get_summary(sub_df1)
+
+results$`sub_df1[[1]]` <- c("Excellent","Very Good", "Good","Fair","Poor","Very Poor","Not Sure")
+
+colnames(results)[1] <- " "
+
+results  %>%
+  kable() %>%
+  kable_styling
+
+```
+
+# Quality of service of: 
+
+```{r d6 , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(70:74)
+array <- c("Count1", "Count2","Count3", "Count4","Count5")
+number <- data.frame(number = c("1","2","3","4","5","6","7","8"))
+clean <- extract_data(sub_df1, array, number)
+
+#make first row the column and rename columns
+colnames(clean) <- c("Excellent","very Good","Good","Fair","Poor","Very Poor","Never used","Never heard of service")
+
+#rename rownames
+rownames(clean) <- c("York University English
+Language Institute", "Writing Support Centre","Learning Skills Services","Learning Commons","Counselling and Disability
+Services")
+
+clean  %>%
+  kable() %>%
+  kable_styling
+
+#I give a frequency to each word of this list 
+b <- sample(seq(0,1,0.01) , length(colnames(clean)) , replace=TRUE) 
+ 
+#The package will automatically make the wordcloud ! (I add a black background)
+par(bg="black") 
+#wordcloud(colnames(clean) , b , col=terrain.colors(length(colnames(clean)) , alpha=0.9) , rot.per=0.3 )
+
+```
+
+# Disability or continuing health condition that requires accommodation
+
+```{r d7 , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(75)
+
+results <- get_summary(sub_df1)
+
+results$`sub_df1[[1]]` <- c("Yes","No")
+
+colnames(results)[1] <- " "
+
+results  %>%
+  kable() %>%
+  kable_styling
+
+```
+
+# Need for accommodation generally met
+
+```{r d25 , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(76)
+
+results <- get_summary(sub_df1)
+
+results$`sub_df1[[1]]` <- c("Fully","Partly","Not met")
+colnames(results)[1] <- " "
+
+results  %>%
+  kable() %>%
+  kable_styling
+
+```
+
+# Paid job during September 2013-April 2014 academic year
+
+```{r f1 , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(78)
+
+results <- get_summary(sub_df1)
+
+results$`sub_df1[[1]]` <- c("No","Yes")
+
+colnames(results)[1] <- " "
+
+results  %>%
+  kable() %>%
+  kable_styling
+
+```
+
+# Paid work
+
+```{r f2 , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(79)
+
+no_na <- sub_df1 %>% na.omit
+
+results <- data.frame("Paid_work" = "Average hours per week", "N" = nrow(no_na), "Minimum" = min(no_na), "Maximum" = max(no_na) ,"Mean" = mean(no_na$f2))
+
+
+results  %>%
+  kable() %>%
+  kable_styling
+
+```
+
+# Due to job, spent less time on campus than would like
+
+```{r f4 , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(80)
+
+results <- get_summary(sub_df1)
+
+results$`sub_df1[[1]]` <- c("Yes, to a major extent","Yes, to some extent","No, job on campus","No, job not on campus")
+
+g <-ggplot(results, aes(`sub_df1[[1]]`, Percent, label=round(Valid_Percent,2), fill = Valid_Percent)) + geom_bar(stat='identity', fill="darkseagreen")+theme(plot.title = element_text(hjust = 0.5)) +geom_text(vjust=0)+labs(title = "Due to job, spent less time on campus than would like",x="Responses")
+
+g
+
+colnames(results)[1] <- " "
+
+results  %>%
+  kable() %>%
+  kable_styling
+
+
+
+
+
+```
+
+# Average hours per week spent:
+
+```{r e5 , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(81:85)
+
+no_na <- sub_df1 %>% na.omit
+
+results <- data.frame("Average_hours_per_week" = c("Doing research on campus","Preparing for class on campus","Travelling to and from university","Participating in extra-curricular activities","Providing care for dependents"), "N" = colSums(!is.na(sub_df1)), "Minimum" = c(min(no_na$Qe5_a),min(no_na$Qe5_b),min(no_na$Qe5_c),min(no_na$Qe5_d),min(no_na$Qe5_e)), "Maximum" = c(max(no_na$Qe5_a),max(no_na$Qe5_b),max(no_na$Qe5_c),max(no_na$Qe5_d),max(no_na$Qe5_e)) ,"Mean" = round(c(mean(no_na$Qe5_a),mean(no_na$Qe5_b),mean(no_na$Qe5_c),mean(no_na$Qe5_d),mean(no_na$Qe5_e)),3))
+
+
+row.names(results)<-NULL
+
+results  %>%
+  kable() %>%
+  kable_styling
+
+```
+
+# Age
+
+```{r age2(table column 96) , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(96)
+
+results <- get_summary(sub_df1)
+
+g <-ggplot(results, aes(`sub_df1[[1]]`, Percent, label=round(Valid_Percent,2), fill = Valid_Percent)) + geom_bar(stat='identity', fill="darkseagreen") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0), plot.title = element_text(hjust = 0.54))+labs(title="Age Distribution",x="Age")
+
+g
+
+colnames(results)[1] <- " "
+
+results  %>%
+  kable() %>%
+  kable_styling
+
+```
+
+# Born in Canada
+
+```{r f11 , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(87)
+
+results <- get_summary(sub_df1)
+
+results$`sub_df1[[1]]` <- c("Yes","No")
+
+colnames(results)[1] <- " "
+
+results  %>%
+  kable() %>%
+  kable_styling
+
+```
+
+# Gender
+
+```{r GENDER (Column 92 in data table) , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(92)
+
+results <- get_summary(sub_df1)
+
+results$`sub_df1[[1]]` <- c("Male","Female")
+
+g <- ggplot(results, aes("",Percent, fill=`sub_df1[[1]]`))+
+  geom_bar(stat="identity", width =1, color="white") +
+  coord_polar("y",start=0)+theme_void()+
+  geom_text(aes(label = paste(round(Percent / sum(Percent) * 100, 1), "%")),
+            position = position_stack(vjust = 0.5)) +
+    labs(fill = "Gender",
+       x = NULL,
+       y = NULL,
+       title = "Gender distribution") + theme(plot.title = element_text(hjust = 0.54))
+
+g
+
+
+colnames(results)[1] <- " "
+
+results  %>%
+  kable() %>%
+  kable_styling
+
+```
+
+# Ethnic/Racial/Cultural background
+
+```{r e8/E8RECODE , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(93)
+
+results <- get_summary(sub_df1)
+
+results$`sub_df1[[1]]` <- c("White","Visible Minority","Other")
+
+g <- ggplot(results, aes("",Percent, fill=`sub_df1[[1]]`))+
+  geom_bar(stat="identity", width =1, color="white") +
+  coord_polar("y",start=0)+theme_void()+
+  geom_text(aes(label = paste(round(Percent / sum(Percent) * 100, 1), "%")),
+            position = position_stack(vjust = 0.5)) +
+    labs(fill = "Ethnic/Racial/Cultural background",
+       x = NULL,
+       y = NULL)
+
+g
+
+colnames(results)[1] <- " "
+
+results  %>%
+  kable() %>%
+  kable_styling
+
+```
+
+# Language spoke most often at home
+
+```{r e9/Qe8_9@e9 , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(89)
+
+results <- get_summary(sub_df1)
+
+colnames(results)[1] <- " "
+
+results  %>%
+  kable() %>%
+  kable_styling
+```
+
+# Highest level of education completed by parents/guardians
+
+```{r par_edu , include=TRUE, echo=FALSE , warning = FALSE}
+
+sub_df1 <-  IT_rf2 %>% select(90)
+
+results <- get_summary(sub_df1)
+
+results$`sub_df1[[1]]` <- c("Did not finish high school","Graduated from high school","Some or completed college or CEGEP","Attended university without earning
+degree","Completed Bachelor's Degree","Completed Master's Degree","Completed a Doctoral Degree","Completed a Professional Degree","Not sure")
+
+g <-ggplot(results, aes(`sub_df1[[1]]`, Percent, label=round(Valid_Percent,2), fill = Valid_Percent)) + geom_bar(stat='identity', fill="darkseagreen") +geom_text(vjust=1)+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0), plot.title = element_text(hjust = 0.54))+labs(title="Highest level of education completed by parents/guardians",x="Responses")
+
+g
+
+colnames(results)[1] <- " "
+
+results  %>%
+  kable() %>%
+  kable_styling
+```
